@@ -1,34 +1,63 @@
 /*
- * Usage of CDK Matrix
+ * File:                main.cc
+ * Date                 04/16/19
+ * Author                Leonel Chacon
+ * Email                 lxc171030@utdallas.edu
+ * Course                CS 3377.501 Spring 2019
+ * Version               1.0
  *
- * File:   example1.cc
- * Author: Stephen Perkins
- * Email:  stephen.perkins@utdallas.edu
+ * Copyright 2019, All Rights Reserved
+ * Description
+ *   Using
  */
 
 #include <iostream>
+#include <iomanip>
+#include <stdint.h>
+#include <sstream>
+#include <string>
+#include <fstream>
 #include "cdk.h"
 
-
-#define MATRIX_WIDTH 3
+#define MATRIX_WIDTH 5
 #define MATRIX_HEIGHT 3
-#define BOX_WIDTH 15
-#define MATRIX_NAME_STRING "Test Matrix"
+#define BOX_WIDTH 25
+#define MATRIX_NAME_STRING "Binary Matrix"
 
 using namespace std;
 
+class BinaryFileHeader{
+public:
+  uint32_t magicNumber;         /* Should be 0xFEEDFACE */
+  uint32_t versionNumber;
+  uint64_t numRecords;
+};
 
-int main()
-{
+/*
+ * Records in the file have a fixed length buffer
+ * that will hold a C‐Style string. This is the
+ * size of the fixed length buffer.
+ */
+const int maxRecordStringLength = 25;
+class BinaryFileRecord{
+public:
+  uint8_t strLength;
+  char   stringBuffer[maxRecordStringLength];
+};
 
+int main(){
   WINDOW	*window;
   CDKSCREEN	*cdkscreen;
   CDKMATRIX     *myMatrix;           // CDK Screen Matrix
+  BinaryFileHeader *myHeader = new BinaryFileHeader();
+  BinaryFileRecord *myRecord = new BinaryFileRecord();
+  ifstream binInfile ("cs3377.bin", ios::in | ios::binary);
 
-  const char 		*rowTitles[MATRIX_HEIGHT+1] = {"R0", "R1", "R2", "R3"};
-  const char 		*columnTitles[MATRIX_WIDTH+1] = {"C0", "C1", "C2", "C3"};
+  const char 		*rowTitles[MATRIX_HEIGHT+1] = {"R0", "A", "B", "C"};
+  const char 		*columnTitles[MATRIX_WIDTH+1] = {"C0", "a", "b", "c", "d", "e"};
   int		boxWidths[MATRIX_WIDTH+1] = {BOX_WIDTH, BOX_WIDTH, BOX_WIDTH, BOX_WIDTH};
   int		boxTypes[MATRIX_WIDTH+1] = {vMIXED, vMIXED, vMIXED, vMIXED};
+
 
   /*
    * Initialize the Cdk screen.
@@ -44,18 +73,53 @@ int main()
   /*
    * Create the matrix.  Need to manually cast (const char**) to (char **)
   */
-  myMatrix = newCDKMatrix(cdkscreen, CENTER, CENTER, MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_WIDTH, MATRIX_HEIGHT,
-			  MATRIX_NAME_STRING, (char **) columnTitles, (char **) rowTitles, boxWidths,
-				     boxTypes, 1, 1, ' ', ROW, true, true, false);
+  myMatrix = newCDKMatrix(cdkscreen, CENTER, CENTER, MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_NAME_STRING, (char **) columnTitles, (char **) rowTitles, boxWidths, boxTypes, 1, 1, ' ', ROW, true, true, false);
 
-  if (myMatrix ==NULL)
-    {
+  if (myMatrix == NULL){
       printf("Error creating Matrix\n");
       _exit(1);
     }
 
-  /* Display the Matrix */
+  string strConvert;
+ 
+ /* Display the Matrix */
   drawCDKMatrix(myMatrix, true);
+
+
+  if(!binInfile.is_open()){
+    cout << "uh oh" << endl;
+  }
+
+  binInfile.read((char *) myHeader, sizeof(BinaryFileHeader));
+
+  stringstream ss;
+
+  ss << hex << uppercase << myHeader->magicNumber;
+  strConvert = "Magic: 0x";
+  strConvert = strConvert.c_str();
+  strConvert +=  ss.str();
+
+  setCDKMatrixCell(myMatrix, 1, 1, strConvert.c_str());
+  drawCDKMatrix(myMatrix, true);
+  
+  ss.str("");
+  strConvert = "Version: ";
+  ss << dec << myHeader->versionNumber;
+  strConvert += ss.str();
+  
+  setCDKMatrixCell(myMatrix, 1, 2, strConvert.c_str());
+  drawCDKMatrix(myMatrix, true);
+
+  ss.str("");
+  strConvert = "NumRecords: ";
+  ss << myHeader->numRecords;
+  strConvert += ss.str();
+
+  setCDKMatrixCell(myMatrix, 1 ,3, strConvert.c_str());
+  drawCDKMatrix(myMatrix, true);
+
+  ss.str("");
+  strConvert = "strLength: ";
 
   /*
    * Dipslay a message
@@ -63,9 +127,10 @@ int main()
   setCDKMatrixCell(myMatrix, 2, 2, "Test Message");
   drawCDKMatrix(myMatrix, true);    /* required  */
 
+  binInfile.close();
+
   /* so we can see results */
   sleep (10);
-
 
   // Cleanup screen
   endCDK();
