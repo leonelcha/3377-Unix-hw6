@@ -117,21 +117,33 @@ int main(){
 
   setCDKMatrixCell(myMatrix, 1 ,3, strConvert.c_str());
   drawCDKMatrix(myMatrix, true);
-
-  ss.str("");
-  strConvert = "strLength: ";
-
-  /*
-   * Dipslay a message
-   */
-  setCDKMatrixCell(myMatrix, 2, 2, "Test Message");
-  drawCDKMatrix(myMatrix, true);    /* required  */
-
+  
+  string buffer;
+  int length;
+  for(int i = 2; i < 6 && binInfile.read((char *) myRecord, sizeof(BinaryFileRecord)); i++){
+    ss.str("");
+    ss << myRecord->stringBuffer;
+    buffer = ss.str();
+    length = buffer.length();
+    strConvert = "strLength: ";
+    ss.str("");
+    ss << length;
+    strConvert += ss.str();
+  
+    setCDKMatrixCell(myMatrix, i, 1, strConvert.c_str());
+    drawCDKMatrix(myMatrix, true);
+    
+    setCDKMatrixCell(myMatrix, i, 2, buffer.c_str());
+    drawCDKMatrix(myMatrix, true);
+  }
+  
   binInfile.close();
 
   /* so we can see results */
-  sleep (10);
+  sleep (5);
 
   // Cleanup screen
   endCDK();
+  
+  return 0;
 }
